@@ -12,7 +12,12 @@ services:
     # Конфиг и состояние подключаем томами, чтобы менять без пересборки
     volumes:
       - ./config.yaml:/app/config.yaml:ro
-      - ./state.db:/app/state.db
+      # Персистентное состояние: держим БД в /data внутри контейнера
+      # Хост-директорию ./data можно бэкапить/просматривать
+      - ./data:/data
+    environment:
+      # Направляем состояние в /data внутри контейнера
+      - BGB__RUNTIME__STATE_DB_PATH=/data/state.db
     # Пробросим метрики, если включены (metrics.enabled=true и порт в конфиге)
     ports:
       - "9308:9308"
@@ -26,4 +31,3 @@ services:
     #   - BGB__EXCHANGE__SYMBOL=SOL/USDT:USDT
     #   - BGB__EXCHANGE__TIMEFRAME=1m
     #   - BGB__RUNTIME__DRY_RUN=false
-

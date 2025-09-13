@@ -15,7 +15,9 @@ COPY prompts /app/prompts
 RUN pip install --upgrade pip && \
     pip install -e .
 
+# Prepare writable data directory and ensure app can write to /app and /data
+RUN mkdir -p /data && chown -R app:app /app /data
+
 USER app
 
 CMD ["python", "-m", "bot", "run", "--config", "/app/config.yaml"]
-
