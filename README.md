@@ -27,6 +27,20 @@
 - Запуск:
   - `docker run --rm -it --env-file .env -v $(pwd)/config.yaml:/app/config.yaml:ro bybit-gpt-bot`
 
+**Docker Compose (рекомендуется)**
+- Подготовьте `.env` и `config.yaml` рядом с `docker-compose.yml`.
+- Первый запуск (сборка + старт):
+  - `docker compose up -d --build`
+- Перезапуск с новым конфигом (без пересборки):
+  - отредактируйте `config.yaml`
+  - `docker compose restart bybit-gpt-bot`
+- Логи:
+  - `docker compose logs -f bybit-gpt-bot`
+- Порты: по умолчанию проброшен `9308` для метрик (включите `metrics.enabled=true`).
+- Перекрытия параметров без правки `config.yaml`:
+  - вариант 1 — CLI в `docker-compose.yml` (секция `command`)
+  - вариант 2 — переменные окружения префикса `BGB__...` в секции `environment`.
+
 **Пример ответа модели (JSON)**
 ```
 {
@@ -72,4 +86,3 @@
 
 **Предупреждение**
 - При `exchange.testnet=false` — операции реальными средствами. Используйте на свой риск.
-

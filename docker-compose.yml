@@ -1,0 +1,29 @@
+version: "3.9"
+
+services:
+  bybit-gpt-bot:
+    build: .
+    image: bybit-gpt-bot:latest
+    container_name: bybit-gpt-bot
+    restart: unless-stopped
+    # Загрузим ключи из .env (OPENAI_API_KEY, BYBIT_API_KEY, BYBIT_API_SECRET)
+    env_file:
+      - .env
+    # Конфиг и состояние подключаем томами, чтобы менять без пересборки
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - ./state.db:/app/state.db
+    # Пробросим метрики, если включены (metrics.enabled=true и порт в конфиге)
+    ports:
+      - "9308:9308"
+    # Можно дописать CLI-переопределения таймфрейма/символа здесь
+    command: [
+      "python", "-m", "bot", "run",
+      "--config", "/app/config.yaml"
+    ]
+    # Пример переопределений через переменные окружения (раскомментируйте при необходимости)
+    # environment:
+    #   - BGB__EXCHANGE__SYMBOL=SOL/USDT:USDT
+    #   - BGB__EXCHANGE__TIMEFRAME=1m
+    #   - BGB__RUNTIME__DRY_RUN=false
+
