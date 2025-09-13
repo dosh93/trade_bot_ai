@@ -1,0 +1,36 @@
+exchange:
+  symbol: "ETH/USDT:USDT"   # Bybit USDT perpetual
+  timeframe: "5m"
+  leverage: 1
+  margin_mode: "cross"
+  post_only: false          # просто лимитные ордера
+  testnet: false
+
+limits:
+  max_info_requests_per_cycle: 5
+  max_open_orders: 5
+  max_position_usdt: 1000
+  max_orders_per_hour: 10
+
+risk:
+  allow_pyramiding: false
+  max_additions: 0
+  reduce_only_when_closing: true
+  default_tp_pct: 0.7
+  default_sl_pct: 0.5
+
+chat:
+  model: "gpt-5-nano"
+  temperature: 0
+  system_prompt_path: "prompts/system.md"
+
+logs:
+  level: "INFO"
+
+metrics:
+  enabled: false
+  port: 9308
+
+runtime:
+  dry_run: false
+

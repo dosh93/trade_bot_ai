@@ -1,0 +1,6 @@
+.env
+config.yaml
+state.db
+state.db-shm
+state.db-wal
+src/bybit_gpt_bot.egg-info
