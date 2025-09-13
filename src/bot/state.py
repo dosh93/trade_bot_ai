@@ -18,6 +18,11 @@ class ActionRecord:
 class State:
     def __init__(self, db_path: str | Path):
         self.db_path = str(db_path)
+        # Ensure parent directory exists if a directory component is provided
+        p = Path(self.db_path)
+        parent = p.parent
+        if str(parent) not in {"", "."}:
+            parent.mkdir(parents=True, exist_ok=True)
         self._conn = sqlite3.connect(self.db_path)
         self._conn.execute("PRAGMA journal_mode=WAL;")
         self._conn.row_factory = sqlite3.Row
@@ -75,5 +80,4 @@ class State:
             self._conn.close()
         except Exception:
             pass
-
 
