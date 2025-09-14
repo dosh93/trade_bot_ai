@@ -17,8 +17,9 @@ class PlaceOrderParams(BaseModel):
     side: Literal["buy", "sell"]
     price: float
     qty: float
-    take_profit: Optional[float] = None
-    stop_loss: Optional[float] = None
+    # TP/SL обязательны: запретить null и отсутствие
+    take_profit: float
+    stop_loss: float
     post_only: Optional[bool] = None
     time_in_force: Optional[Literal["GTC", "IOC", "FOK"]] = None
 
@@ -34,6 +35,16 @@ class PlaceOrderParams(BaseModel):
     def qty_positive(cls, v):
         if v <= 0:
             raise ValueError("qty must be > 0")
+        return float(v)
+
+    @field_validator("take_profit", "stop_loss")
+    @classmethod
+    def tp_sl_positive(cls, v):
+        if v is None:
+            # избыточная защита: по типу None не пройдёт, но оставим явное сообщение
+            raise ValueError("take_profit/stop_loss must be provided")
+        if v <= 0:
+            raise ValueError("take_profit/stop_loss must be > 0")
         return float(v)
 
 

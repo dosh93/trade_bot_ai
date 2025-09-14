@@ -12,8 +12,8 @@ def test_place_order_valid():
             "side": "buy",
             "price": 100.0,
             "qty": 0.1,
-            "take_profit": None,
-            "stop_loss": None,
+            "take_profit": 101.0,
+            "stop_loss": 99.0,
             "post_only": None,
             "time_in_force": None,
         },
@@ -43,4 +43,3 @@ def test_idempotency_in_state(tmp_path):
     assert not st.has_action(key)
     st.record_action(key, "completed", None)
     assert st.has_action(key)
-

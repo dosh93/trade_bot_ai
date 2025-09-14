@@ -29,8 +29,6 @@ class RiskConfig(BaseModel):
     allow_pyramiding: bool = Field(False)
     max_additions: int = Field(0, ge=0)
     reduce_only_when_closing: bool = Field(True)
-    default_tp_pct: float = Field(0.7, ge=0.0)
-    default_sl_pct: float = Field(0.5, ge=0.0)
 
 
 class ChatConfig(BaseModel):
@@ -118,5 +116,4 @@ def load_config(path: str | Path | None) -> AppConfig:
         raise RuntimeError(f"Invalid config: {e}")
 
     return cfg
-
 

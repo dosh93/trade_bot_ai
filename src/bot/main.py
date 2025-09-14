@@ -18,7 +18,7 @@ from .scheduler import wait_for_next_closed_candle, last_closed_candle_open_time
 from .chat import ChatClient
 from .decisions import Decision
 from .state import State
-from .risk import RiskLimits, check_open_orders_limit, check_orders_per_hour, would_exceed_position_usdt, default_tp_sl
+from .risk import RiskLimits, check_open_orders_limit, check_orders_per_hour, would_exceed_position_usdt
 from .metrics import start_metrics_server_if_enabled, cycles_total, orders_placed_total, errors_total
 from .features import compute_features
 
@@ -166,10 +166,8 @@ def _build_snapshot(cfg: AppConfig, ex: BybitExchange, extra_data: dict | None) 
             "symbol": symbol,
             "timeframe": timeframe,
             "post_only": cfg.exchange.post_only,
-            "risk": {
-                "default_tp_pct": cfg.risk.default_tp_pct,
-                "default_sl_pct": cfg.risk.default_sl_pct,
-            },
+            # risk.defaults (default_tp_pct/default_sl_pct) намеренно не включаем в снапшот,
+            # чтобы модель всегда указывала TP/SL явно
         },
         "account_snapshot": account_snapshot,
         "market_snapshot": market_snapshot,
@@ -185,8 +183,6 @@ def _execute_action(cfg: AppConfig, ex: BybitExchange, st: State, decision: Deci
         max_open_orders=cfg.limits.max_open_orders,
         max_position_usdt=cfg.limits.max_position_usdt,
         max_orders_per_hour=cfg.limits.max_orders_per_hour,
-        default_tp_pct=cfg.risk.default_tp_pct,
-        default_sl_pct=cfg.risk.default_sl_pct,
         reduce_only_when_closing=cfg.risk.reduce_only_when_closing,
     )
 
@@ -255,13 +251,9 @@ def _execute_action(cfg: AppConfig, ex: BybitExchange, st: State, decision: Deci
                 console.print(f"[yellow]Insufficient free USDT (~{free_usdt}) for margin (~{required_margin}). Skipping order.")
                 return
 
-        # TP/SL merge defaults if nulls
-        take_profit = getattr(params, 'take_profit', None)
-        stop_loss = getattr(params, 'stop_loss', None)
-        if take_profit is None or stop_loss is None:
-            dtp, dsl = default_tp_sl(price, side, cfg.risk.default_tp_pct, cfg.risk.default_sl_pct)
-            take_profit = dtp if take_profit is None else take_profit
-            stop_loss = dsl if stop_loss is None else stop_loss
+        # TP/SL: требуем явного указания моделью (никаких значений по умолчанию)
+        take_profit = float(params.take_profit)  # type: ignore[attr-defined]
+        stop_loss = float(params.stop_loss)      # type: ignore[attr-defined]
 
         # normalize
         nprice, nqty = ex.normalize_price_amount(price, qty)
@@ -312,33 +304,9 @@ def _execute_action(cfg: AppConfig, ex: BybitExchange, st: State, decision: Deci
             console.log(f"Order placed id={order.get('id')}")
         except Exception as e:
             errors_total.inc()
-            # Fallback: retry without TP/SL if error may be related to triggers
-            msg = str(e)
-            if any(k in msg for k in ["takeProfit", "stopLoss", "trigger", "Reduce only order is not allowed with TP/SL"]):
-                console.print("[yellow]Retrying order without TP/SL due to error...")
-                try:
-                    order = ex.create_limit_order(
-                        symbol,
-                        side,
-                        nqty,
-                        nprice,
-                        client_order_id=client_oid,
-                        time_in_force=tif or "GTC",
-                        reduce_only=False,
-                        post_only=post_only,
-                        take_profit=None,
-                        stop_loss=None,
-                    )
-                    orders_placed_total.inc()
-                    st.record_action(decision.idempotency_key, "completed", json.dumps(order))
-                    console.log(f"Order placed (no TP/SL) id={order.get('id')}")
-                    return
-                except Exception as e2:
-                    st.record_action(decision.idempotency_key, "error", f"fallback_failed: {e2}")
-                    console.print(f"[red]Order placement failed after fallback: {e2}")
-            else:
-                st.record_action(decision.idempotency_key, "error", str(e))
-                console.print(f"[red]Order placement failed: {e}")
+            # Не допускаем выставления ордеров без TP/SL — никаких фолбэков
+            st.record_action(decision.idempotency_key, "error", str(e))
+            console.print(f"[red]Order placement failed (no fallback without TP/SL): {e}")
 
     elif action == "cancel_order":
         order_id = getattr(params, 'order_id', None)
