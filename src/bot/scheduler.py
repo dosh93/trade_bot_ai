@@ -14,6 +14,7 @@ TIMEFRAME_SECONDS = {
     "2h": 7200,
     "4h": 14400,
     "1d": 86400,
+    "1w": 604800,
 }
 
 
@@ -47,5 +48,4 @@ def last_closed_candle_open_time(timeframe: str, now_ts: float | None = None) ->
     now_ts = now_ts or time.time()
     close_ts = next_candle_close_time(timeframe, now_ts)
     return close_ts - TIMEFRAME_SECONDS[timeframe]
-
 
